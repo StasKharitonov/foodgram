@@ -9,7 +9,8 @@ __pycache__/
 
 # C extensions
 *.so
-
+frontend/frontend_build/
+backend/db.sqlite3.bak
 # Distribution / packaging
 .Python
 build/
