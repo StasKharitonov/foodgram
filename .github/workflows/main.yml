@@ -136,6 +136,15 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
+      - name: Fix permissions on server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            mkdir -p ~/foodgram
+            sudo chown -R $USER:$USER ~/foodgram
       - name: Copy files via ssh
         uses: appleboy/scp-action@master
         with:
@@ -159,6 +168,7 @@ jobs:
             sudo docker compose exec -T backend python manage.py collectstatic --noinput
             sudo docker compose exec -T backend python manage.py load_tags
             sudo docker compose exec -T backend python manage.py load_csv
+            sudo chown -R $USER:$USER ~/foodgram/data
 
   send_message:
     if: github.ref == 'refs/heads/main'
