@@ -1,14 +1,13 @@
+from djoser.serializers import (TokenCreateSerializer, UserCreateSerializer,
+                                UserSerializer)
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 
-from recipes.models import (
-    Ingredient, Tag, Recipe,
-    RecipeIngredient, Subscription
-)
-from users.models import User
 from recipes.constants import MAX_AUTHOR_RECIPES, MAX_LEN_NAME
-from djoser.serializers import UserCreateSerializer, UserSerializer
-from djoser.serializers import TokenCreateSerializer
+from recipes.models import (Ingredient, Recipe, RecipeIngredient, Subscription,
+                            Tag)
+from users.models import User
+
 from .fields import Base64ImageField
 
 
@@ -238,11 +237,13 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {'image': 'Изображение обязательно'}
                 )
-            if 'ingredients' not in self.initial_data or not self.initial_data.get('ingredients'):
+            ingredients_data = self.initial_data.get('ingredients')
+            if 'ingredients' not in self.initial_data or not ingredients_data:
                 raise serializers.ValidationError(
                     {'ingredients': 'Обязательное поле.'}
                 )
-            if 'tags' not in self.initial_data or not self.initial_data.get('tags'):
+            tags_data = self.initial_data.get('tags')
+            if 'tags' not in self.initial_data or not tags_data:
                 raise serializers.ValidationError(
                     {'tags': 'Обязательное поле.'}
                 )

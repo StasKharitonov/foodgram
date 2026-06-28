@@ -1,8 +1,9 @@
-from django.db import models
 from django.core.validators import MinValueValidator
+from django.db import models
 
 from users.models import User
-from .constants import MAX_LEN_NAME, MAX_LEN_MEASURE, MAXIMUM_WORD_LENGTH
+
+from .constants import MAX_LEN_MEASURE, MAX_LEN_NAME, MAXIMUM_WORD_LENGTH
 
 
 class CreatedAtAbstract(models.Model):

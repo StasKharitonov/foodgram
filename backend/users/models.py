@@ -2,9 +2,10 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.db import models
 
-from .managers import CustomUserManager
-from recipes.constants import MAX_LEN_EMAIL, MAX_LEN_USERNAME
 from api.validators import namevalidator
+from recipes.constants import MAX_LEN_EMAIL, MAX_LEN_USERNAME
+
+from .managers import CustomUserManager
 
 
 class Role(models.TextChoices):

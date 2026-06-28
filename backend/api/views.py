@@ -1,29 +1,25 @@
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.permissions import (
-    AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
-)
 from django.db.models import Count
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as DjoserUserViewSet
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import (AllowAny, IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
+from rest_framework.response import Response
 
-from recipes.models import (
-    Favorite, Ingredient, Tag,
-    Recipe, Subscription, ShoppingCart
-)
 from recipes.constants import MAX_AUTHOR_RECIPES
+from recipes.models import (Favorite, Ingredient, Recipe, ShoppingCart,
+                            Subscription, Tag)
 from users.models import User
-from .serializers import (
-    IngredientSerializer, TagSerializer,
-    RecipeSerializer, UserWithRecipesSerializer,
-    RecipeCreateUpdateSerializer, ShortRecipeSerializer,
-    SetAvatarSerializer,
-)
-from .permissions import AuthorOrReadOnly
+
 from .filters import filter_recipes
 from .pagination import CustomPageNumberPagination
+from .permissions import AuthorOrReadOnly
+from .serializers import (IngredientSerializer, RecipeCreateUpdateSerializer,
+                          RecipeSerializer, SetAvatarSerializer,
+                          ShortRecipeSerializer, TagSerializer,
+                          UserWithRecipesSerializer)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
