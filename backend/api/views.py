@@ -10,9 +10,8 @@ from rest_framework.permissions import (AllowAny, IsAuthenticated,
 from rest_framework.response import Response
 
 from recipes.constants import MAX_AUTHOR_RECIPES
-from recipes.models import (Favorite, Ingredient, Recipe, ShoppingCart,
-                            Subscription, Tag)
-from users.models import User
+from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
+from users.models import Subscription, User
 
 from .filters import IngredientSearchFilter, RecipeFilter
 from .pagination import PageNumberPagination
@@ -56,9 +55,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def get_link(self, request, pk=None):
         recipe = get_object_or_404(Recipe, pk=pk)
-        url = request.build_absolute_uri(
-            f'/api/recipes/{recipe.id}/'
-        )
+        short_code = format(recipe.id, 'x')
+        url = request.build_absolute_uri(f'/s/{short_code}/')
         return Response({'short-link': url})
 
     @action(

@@ -6,9 +6,8 @@ from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 
 from recipes.constants import MAX_AUTHOR_RECIPES, MAX_LEN_RECIPE_NAME
-from recipes.models import (Ingredient, Recipe, RecipeIngredient, Subscription,
-                            Tag)
-from users.models import User
+from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
+from users.models import Subscription, User
 
 from .fields import Base64ImageField
 

@@ -122,7 +122,13 @@ class RecipeIngredient(models.Model):
         verbose_name='Рецепт'
     )
     amount = models.PositiveIntegerField(
-        'Количество'
+        'Количество',
+        validators=[
+            MinValueValidator(
+                1,
+                message='Количество ингредиента должно быть больше 0',
+            ),
+        ],
     )
 
     def __str__(self):
@@ -197,31 +203,3 @@ class ShoppingCart(models.Model):
 
     def __str__(self):
         return f'{self.recipe} в корзине пользователя {self.user}'
-
-
-class Subscription(CreatedAtAbstract):
-    subscriber = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='subscriptions',
-        verbose_name='Подписчик'
-    )
-    subscribed_to = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='subscribers',
-        verbose_name='Автор'
-    )
-
-    def __str__(self):
-        return f'{self.subscriber} подписан на {self.subscribed_to}'
-
-    class Meta(CreatedAtAbstract.Meta):
-        verbose_name = 'Подписка'
-        verbose_name_plural = 'Подписки'
-        constraints = (
-            models.UniqueConstraint(
-                fields=('subscriber', 'subscribed_to'),
-                name='unique_name_owner'
-            ),
-        )
