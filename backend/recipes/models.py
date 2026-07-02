@@ -3,13 +3,8 @@ from django.db import models
 
 from users.models import User
 
-from .constants import (
-    MAX_LEN_INGREDIENT_NAME,
-    MAX_LEN_MEASURE,
-    MAX_LEN_RECIPE_NAME,
-    MAX_LEN_TAG,
-    MAXIMUM_WORD_LENGTH,
-)
+from .constants import (MAX_LEN_INGREDIENT_NAME, MAX_LEN_MEASURE,
+                        MAX_LEN_RECIPE_NAME, MAX_LEN_TAG, MAXIMUM_WORD_LENGTH)
 
 
 class CreatedAtAbstract(models.Model):

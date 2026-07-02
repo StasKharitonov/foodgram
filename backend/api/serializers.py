@@ -1,7 +1,7 @@
-from djoser.serializers import (
-    TokenCreateSerializer as DjoserTokenCreateSerializer,
-    UserCreateSerializer as DjoserUserCreateSerializer,
-)
+from djoser.serializers import \
+    TokenCreateSerializer as DjoserTokenCreateSerializer
+from djoser.serializers import \
+    UserCreateSerializer as DjoserUserCreateSerializer
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 

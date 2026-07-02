@@ -21,7 +21,10 @@ class UserAdmin(BaseUserAdmin):
             'fields': ('username', 'first_name', 'last_name', 'avatar', 'bio')
         }),
         ('Права доступа', {
-            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')
+            'fields': (
+                'is_active', 'is_staff', 'is_superuser',
+                'groups', 'user_permissions',
+            )
         }),
         ('Даты', {'fields': ('last_login', 'date_joined')}),
     )
