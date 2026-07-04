@@ -42,14 +42,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'create', 'download_shopping_cart',
             'favorite', 'shopping_cart'
         ):
-            return [IsAuthenticated()]
+            return (IsAuthenticated(),)
         if self.action in ('update', 'partial_update', 'destroy'):
-            return [IsAuthenticated(), AuthorOrReadOnly()]
-        return [IsAuthenticatedOrReadOnly()]
+            return (IsAuthenticated(), AuthorOrReadOnly())
+        return (IsAuthenticatedOrReadOnly(),)
 
     @action(
         detail=True,
-        methods=['get'],
+        methods=('get',),
         url_path='get-link',
         permission_classes=(AllowAny,)
     )
@@ -61,7 +61,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=False,
-        methods=['get'],
+        methods=('get',),
         url_path='download_shopping_cart',
         permission_classes=(IsAuthenticated,)
     )
@@ -96,7 +96,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=True,
-        methods=['post', 'delete'],
+        methods=('post', 'delete'),
         permission_classes=(IsAuthenticated,),
         url_path='favorite'
     )
@@ -128,7 +128,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=True,
-        methods=['post', 'delete'],
+        methods=('post', 'delete'),
         permission_classes=(IsAuthenticated,),
         url_path='shopping_cart'
     )
@@ -197,7 +197,7 @@ class UserViewSet(DjoserUserViewSet):
 
     @action(
         detail=False,
-        methods=['get'],
+        methods=('get',),
         permission_classes=(IsAuthenticated,),
         url_path='subscriptions'
     )
@@ -225,7 +225,7 @@ class UserViewSet(DjoserUserViewSet):
 
     @action(
         detail=True,
-        methods=['post', 'delete'],
+        methods=('post', 'delete'),
         permission_classes=(IsAuthenticated,),
         url_path='subscribe'
     )
@@ -279,7 +279,7 @@ class UserViewSet(DjoserUserViewSet):
 
     @action(
         detail=False,
-        methods=['put', 'delete'],
+        methods=('put', 'delete'),
         permission_classes=(IsAuthenticated,),
         url_path='me/avatar'
     )
