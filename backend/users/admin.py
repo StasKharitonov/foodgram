@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.db.models import Count
 
 from .models import Subscription, User
 
@@ -7,18 +8,24 @@ from .models import Subscription, User
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     list_display = (
-        'email', 'username', 'first_name',
-        'last_name', 'is_staff'
+        'email',
+        'username',
+        'first_name',
+        'last_name',
+        'recipes_count',
+        'subscribers_count',
+        'is_staff',
     )
     search_fields = (
         'email',
         'username',
     )
+    list_filter = ('is_staff', 'is_active')
     ordering = ('email',)
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
         ('Персональная информация', {
-            'fields': ('username', 'first_name', 'last_name', 'avatar', 'bio')
+            'fields': ('username', 'first_name', 'last_name', 'avatar')
         }),
         ('Права доступа', {
             'fields': (
@@ -38,15 +45,29 @@ class UserAdmin(BaseUserAdmin):
         }),
     )
 
+    @admin.display(description='Рецептов')
+    def recipes_count(self, obj):
+        return obj.recipes_count
+
+    @admin.display(description='Подписчиков')
+    def subscribers_count(self, obj):
+        return obj.subscribers_count
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(
+            recipes_count=Count('recipes'),
+            subscribers_count=Count('subscribers'),
+        )
+
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
-    list_display = ('subscriber', 'subscribed_to', 'created_at')
+    list_display = ('user', 'author')
     search_fields = (
-        'subscriber__email',
-        'subscriber__username',
-        'subscribed_to__email',
-        'subscribed_to__username',
+        'user__email',
+        'user__username',
+        'author__email',
+        'author__username',
     )
-    list_filter = ('subscriber', 'subscribed_to')
-    autocomplete_fields = ('subscriber', 'subscribed_to')
+    list_filter = ('user', 'author')
+    autocomplete_fields = ('user', 'author')

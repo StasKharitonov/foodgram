@@ -1,24 +1,15 @@
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from users.models import User
 
-from .constants import (MAX_LEN_INGREDIENT_NAME, MAX_LEN_MEASURE,
-                        MAX_LEN_RECIPE_NAME, MAX_LEN_TAG, MAXIMUM_WORD_LENGTH)
+from .constants import (MAX_COOKING_TIME, MAX_LEN_INGREDIENT_NAME,
+                        MAX_LEN_MEASURE, MAX_LEN_RECIPE_NAME, MAX_LEN_TAG,
+                        MAXIMUM_WORD_LENGTH, MIN_COOKING_TIME,
+                        MIN_INGREDIENT_AMOUNT)
 
 
-class CreatedAtAbstract(models.Model):
-    created_at = models.DateTimeField(
-        'Дата добавления',
-        auto_now_add=True
-    )
-
-    class Meta:
-        abstract = True
-        ordering = ('-created_at',)
-
-
-class Recipe(CreatedAtAbstract):
+class Recipe(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -32,8 +23,6 @@ class Recipe(CreatedAtAbstract):
     image = models.ImageField(
         'Картинка',
         upload_to='recipes/images/',
-        null=False,
-        blank=False
     )
     text = models.TextField(
         'Описание'
@@ -52,15 +41,30 @@ class Recipe(CreatedAtAbstract):
         'Время приготовления (мин)',
         validators=(
             MinValueValidator(
-                1,
-                message='Время приготовления должно быть не менее 1 минуты'
+                MIN_COOKING_TIME,
+                message=(
+                    f'Время приготовления должно быть '
+                    f'не менее {MIN_COOKING_TIME} минуты'
+                ),
+            ),
+            MaxValueValidator(
+                MAX_COOKING_TIME,
+                message=(
+                    f'Время приготовления не должно превышать '
+                    f'{MAX_COOKING_TIME} минут'
+                ),
             ),
         )
     )
+    created_at = models.DateTimeField(
+        'Дата добавления',
+        auto_now_add=True,
+    )
 
-    class Meta(CreatedAtAbstract.Meta):
+    class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
+        ordering = ('-created_at',)
 
     def __str__(self):
         if len(self.name) > MAXIMUM_WORD_LENGTH:
@@ -81,6 +85,12 @@ class Ingredient(models.Model):
     class Meta:
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
+        constraints = (
+            models.UniqueConstraint(
+                fields=('name', 'measurement_unit'),
+                name='unique_ingredient_name_unit',
+            ),
+        )
 
     def __str__(self):
         if len(self.name) > MAXIMUM_WORD_LENGTH:
@@ -125,17 +135,14 @@ class RecipeIngredient(models.Model):
         'Количество',
         validators=(
             MinValueValidator(
-                1,
-                message='Количество ингредиента должно быть больше 0',
+                MIN_INGREDIENT_AMOUNT,
+                message=(
+                    f'Количество ингредиента должно быть '
+                    f'не менее {MIN_INGREDIENT_AMOUNT}'
+                ),
             ),
         ),
     )
-
-    def __str__(self):
-        ingredient_name = self.ingredient.name
-        if len(ingredient_name) > MAXIMUM_WORD_LENGTH:
-            return f'{ingredient_name[:MAXIMUM_WORD_LENGTH]}'
-        return ingredient_name
 
     class Meta:
         verbose_name = 'Ингредиент в рецепте'
@@ -147,8 +154,30 @@ class RecipeIngredient(models.Model):
             ),
         )
 
+    def __str__(self):
+        ingredient_name = self.ingredient.name
+        if len(ingredient_name) > MAXIMUM_WORD_LENGTH:
+            return f'{ingredient_name[:MAXIMUM_WORD_LENGTH]}'
+        return ingredient_name
 
-class Favorite(models.Model):
+
+class UserRecipe(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Пользователь',
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        verbose_name='Рецепт',
+    )
+
+    class Meta:
+        abstract = True
+
+
+class Favorite(UserRecipe):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -159,7 +188,7 @@ class Favorite(models.Model):
         Recipe,
         on_delete=models.CASCADE,
         verbose_name='Рецепт',
-        related_name='favorited_by'
+        related_name='favorited_by',
     )
 
     class Meta:
@@ -168,27 +197,26 @@ class Favorite(models.Model):
         constraints = (
             models.UniqueConstraint(
                 fields=('user', 'recipe'),
-                name='unique_favorite_user_recipe'
+                name='unique_favorite_user_recipe',
             ),
         )
 
     def __str__(self):
-        return f'{self.user} добавил "{self.recipe}" в избранное'
+        return f'{self.recipe} — {self._meta.verbose_name} ({self.user})'
 
 
-class ShoppingCart(models.Model):
+class ShoppingCart(UserRecipe):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='shopping_cart_items',
-        verbose_name='Пользователь'
-
+        verbose_name='Пользователь',
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
         related_name='in_shopping_cart',
-        verbose_name='Рецепт'
+        verbose_name='Рецепт',
     )
 
     class Meta:
@@ -197,9 +225,9 @@ class ShoppingCart(models.Model):
         constraints = (
             models.UniqueConstraint(
                 fields=('user', 'recipe'),
-                name='unique_cart_user_recipe'
+                name='unique_cart_user_recipe',
             ),
         )
 
     def __str__(self):
-        return f'{self.recipe} в корзине пользователя {self.user}'
+        return f'{self.recipe} — {self._meta.verbose_name} ({self.user})'

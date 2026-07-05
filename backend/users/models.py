@@ -7,6 +7,9 @@ from recipes.constants import MAX_LEN_EMAIL, MAX_LEN_USERNAME
 
 
 class User(AbstractUser):
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
+
     email = models.EmailField(
         max_length=MAX_LEN_EMAIL,
         unique=True,
@@ -37,31 +40,24 @@ class User(AbstractUser):
         blank=True,
         null=True,
     )
-    bio = models.TextField('Биография', blank=True)
-
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
 
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
+        ordering = ('username',)
 
     def __str__(self):
         return self.username
 
 
 class Subscription(models.Model):
-    created_at = models.DateTimeField(
-        'Дата добавления',
-        auto_now_add=True,
-    )
-    subscriber = models.ForeignKey(
+    user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='subscriptions',
-        verbose_name='Подписчик',
+        verbose_name='Пользователь',
     )
-    subscribed_to = models.ForeignKey(
+    author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='subscribers',
@@ -72,22 +68,21 @@ class Subscription(models.Model):
         db_table = 'recipes_subscription'
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
-        ordering = ('-created_at',)
         constraints = (
             models.UniqueConstraint(
-                fields=('subscriber', 'subscribed_to'),
+                fields=('user', 'author'),
                 name='unique_name_owner',
             ),
             models.CheckConstraint(
-                check=~models.Q(subscriber=models.F('subscribed_to')),
+                check=~models.Q(user=models.F('author')),
                 name='prevent_self_subscription',
             ),
         )
 
     def clean(self):
         super().clean()
-        if self.subscriber_id == self.subscribed_to_id:
+        if self.user_id == self.author_id:
             raise ValidationError('Нельзя подписаться на самого себя')
 
     def __str__(self):
-        return f'{self.subscriber} подписан на {self.subscribed_to}'
+        return f'{self.user} подписан на {self.author}'

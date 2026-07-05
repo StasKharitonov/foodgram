@@ -1,5 +1,4 @@
-from rest_framework.pagination import \
-    PageNumberPagination as DRFPageNumberPagination
+from rest_framework.pagination import PageNumberPagination as DRFPageNumberPagination
 
 
 class PageNumberPagination(DRFPageNumberPagination):

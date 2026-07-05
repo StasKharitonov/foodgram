@@ -2,6 +2,9 @@ from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.db.models import Count
 from django.forms.models import BaseInlineFormSet
+from django.utils.safestring import mark_safe
+
+from recipes.constants import COOKING_TIME_FAST_MAX, COOKING_TIME_MEDIUM_MAX
 
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCart, Tag)
@@ -11,12 +14,14 @@ from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
 class IngredientAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'measurement_unit')
     search_fields = ('name',)
+    list_filter = ('measurement_unit',)
 
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'slug')
-    search_fields = ('name',)
+    search_fields = ('name', 'slug')
+    list_filter = ('name',)
 
 
 class RecipeIngredientInlineFormSet(BaseInlineFormSet):
@@ -29,15 +34,7 @@ class RecipeIngredientInlineFormSet(BaseInlineFormSet):
         for form in self.forms:
             if not form.cleaned_data or form.cleaned_data.get('DELETE'):
                 continue
-
-            ingredient = form.cleaned_data.get('ingredient')
-            amount = form.cleaned_data.get('amount')
-
-            if ingredient:
-                if not amount or amount < 1:
-                    raise ValidationError(
-                        'Количество ингредиента должно быть больше 0'
-                    )
+            if form.cleaned_data.get('ingredient'):
                 ingredients_count += 1
 
         if ingredients_count < 1:
@@ -53,13 +50,76 @@ class RecipeIngredientInline(admin.TabularInline):
     autocomplete_fields = ('ingredient',)
 
 
+class CookingTimeFilter(admin.SimpleListFilter):
+    title = 'Время приготовления'
+    parameter_name = 'cooking_time'
+
+    def lookups(self, request, model_admin):
+        return (
+            (
+                'fast',
+                f'Быстрые (до {COOKING_TIME_FAST_MAX} мин)',
+            ),
+            (
+                'medium',
+                (
+                    f'Средние ({COOKING_TIME_FAST_MAX + 1}'
+                    f'—{COOKING_TIME_MEDIUM_MAX} мин)'
+                ),
+            ),
+            (
+                'long',
+                f'Долгие (от {COOKING_TIME_MEDIUM_MAX + 1} мин)',
+            ),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == 'fast':
+            return queryset.filter(cooking_time__lte=COOKING_TIME_FAST_MAX)
+        if self.value() == 'medium':
+            return queryset.filter(
+                cooking_time__gt=COOKING_TIME_FAST_MAX,
+                cooking_time__lte=COOKING_TIME_MEDIUM_MAX,
+            )
+        if self.value() == 'long':
+            return queryset.filter(cooking_time__gt=COOKING_TIME_MEDIUM_MAX)
+        return queryset
+
+
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'author', 'favorites_count')
+    list_display = (
+        'id',
+        'name',
+        'author',
+        'image_preview',
+        'tags_list',
+        'ingredients_list',
+        'favorites_count',
+    )
     search_fields = ('name', 'author__username', 'author__email')
-    list_filter = ('tags',)
+    list_filter = ('tags', CookingTimeFilter, 'author')
     filter_horizontal = ('tags',)
     inlines = (RecipeIngredientInline,)
+
+    @admin.display(description='Изображение')
+    def image_preview(self, obj):
+        if obj.image:
+            return mark_safe(
+                f'<img src="{obj.image.url}" width="80" height="60">'
+            )
+        return '—'
+
+    @admin.display(description='Теги')
+    def tags_list(self, obj):
+        return ', '.join(tag.name for tag in obj.tags.all())
+
+    @admin.display(description='Ингредиенты')
+    def ingredients_list(self, obj):
+        return ', '.join(
+            recipe_ingredient.ingredient.name
+            for recipe_ingredient in obj.recipeingredient_set.all()
+        )
 
     @admin.display(description='Кол-во добавлений в избранное')
     def favorites_count(self, obj):
@@ -73,9 +133,10 @@ class RecipeAdmin(admin.ModelAdmin):
 
 @admin.register(RecipeIngredient)
 class RecipeIngredientAdmin(admin.ModelAdmin):
-    list_display = ('id', 'ingredient', 'recipe')
-    search_fields = ('id',)
-    list_filter = ('id',)
+    list_display = ('id', 'ingredient', 'recipe', 'amount')
+    search_fields = ('ingredient__name', 'recipe__name')
+    list_filter = ('ingredient', 'recipe')
+    autocomplete_fields = ('ingredient', 'recipe')
 
 
 @admin.register(Favorite)
@@ -83,6 +144,7 @@ class FavoriteAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'recipe')
     search_fields = ('user__email', 'user__username', 'recipe__name')
     list_filter = ('user', 'recipe')
+    autocomplete_fields = ('user', 'recipe')
 
 
 @admin.register(ShoppingCart)
@@ -90,3 +152,4 @@ class ShoppingCartAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'recipe')
     search_fields = ('user__email', 'user__username', 'recipe__name')
     list_filter = ('user', 'recipe')
+    autocomplete_fields = ('user', 'recipe')

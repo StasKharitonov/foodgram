@@ -12,19 +12,25 @@ class Command(BaseCommand):
         try:
             with open(csv_path, 'r', encoding='utf-8') as file:
                 reader = csv.reader(file)
-                count = 0
+                ingredients = []
                 for row in reader:
                     if not row:
                         continue
-                    Ingredient.objects.get_or_create(
-                        name=row[0].strip(),
-                        measurement_unit=row[1].strip()
-                    )
-                    count += 1
-                self.stdout.write(
-                    self.style.SUCCESS(f'Загружено {count} ингридиентов')
+                    name, measurement_unit = row
+                    ingredients.append(Ingredient(
+                        name=name.strip(),
+                        measurement_unit=measurement_unit.strip(),
+                    ))
+                Ingredient.objects.bulk_create(
+                    ingredients,
+                    ignore_conflicts=True,
                 )
-        except Exception as e:
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f'Загружено {len(ingredients)} ингридиентов'
+                    )
+                )
+        except Exception as error:
             self.stdout.write(
-                self.style.ERROR(f'Ошибка при загрузке: {e}')
+                self.style.ERROR(f'Ошибка при загрузке: {error}')
             )
