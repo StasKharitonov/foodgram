@@ -104,11 +104,9 @@ class RecipeAdmin(admin.ModelAdmin):
 
     @admin.display(description='Изображение')
     def image_preview(self, obj):
-        if obj.image:
-            return mark_safe(
-                f'<img src="{obj.image.url}" width="80" height="60">'
-            )
-        return '—'
+        return mark_safe(
+            f'<img src="{obj.image.url}" width="80" height="60">'
+        )
 
     @admin.display(description='Теги')
     def tags_list(self, obj):

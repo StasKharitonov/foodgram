@@ -1,6 +1,6 @@
 import io
 
-from django.db.models import Count, Exists, OuterRef, Sum
+from django.db.models import Count, Exists, F, OuterRef, Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -27,9 +27,7 @@ from users.models import Subscription, User
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.select_related('author').prefetch_related(
-        'tags', 'recipeingredient_set__ingredient'
-    )
+    queryset = Recipe.objects.all()
     permission_classes = (IsAuthenticatedOrReadOnly, AuthorOrReadOnly)
     pagination_class = PageNumberPagination
     filter_backends = (DjangoFilterBackend,)
@@ -37,7 +35,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     http_method_names = ('get', 'post', 'patch', 'delete')
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = Recipe.objects.select_related('author').prefetch_related(
+            'tags', 'recipeingredient_set__ingredient'
+        )
         user = self.request.user
         if user.is_authenticated:
             queryset = queryset.annotate(
@@ -63,6 +63,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @staticmethod
     def _add_to_collection(request, pk, serializer_class):
+        get_object_or_404(Recipe, pk=pk)
         serializer = serializer_class(
             data={'user': request.user.id, 'recipe': pk},
             context={'request': request},
@@ -88,8 +89,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def _build_shopping_list_content(ingredients):
         lines = [
             (
-                f'{item["ingredient__name"]} '
-                f'({item["ingredient__measurement_unit"]}) — '
+                f'{item["name"]} '
+                f'({item["unit"]}) — '
                 f'{item["amount"]}'
             )
             for item in ingredients
@@ -120,11 +121,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ingredients = RecipeIngredient.objects.filter(
             recipe__in_shopping_cart__user=request.user
         ).values(
-            'ingredient__name',
-            'ingredient__measurement_unit',
+            name=F('ingredient__name'),
+            unit=F('ingredient__measurement_unit'),
         ).annotate(
             amount=Sum('amount')
-        ).order_by('ingredient__name')
+        ).order_by('name')
         content = self._build_shopping_list_content(ingredients)
         buffer = io.BytesIO(content.encode())
         return FileResponse(
@@ -205,7 +206,9 @@ class UserViewSet(DjoserUserViewSet):
     def subscriptions(self, request):
         authors = User.objects.filter(
             subscribers__user=request.user
-        ).annotate(recipes_count=Count('recipes')).distinct()
+        ).annotate(
+            recipes_count=Count('recipes')
+        ).order_by('username')
         page = self.paginate_queryset(authors)
         serializer = UserWithRecipesSerializer(
             page if page is not None else authors,
@@ -223,6 +226,7 @@ class UserViewSet(DjoserUserViewSet):
         url_path='subscribe'
     )
     def subscribe(self, request, id=None):
+        get_object_or_404(User, id=id)
         serializer = SubscriptionCreateSerializer(
             data={
                 'user': request.user.id,
@@ -265,6 +269,5 @@ class UserViewSet(DjoserUserViewSet):
 
     @avatar.mapping.delete
     def delete_avatar(self, request):
-        if request.user.avatar:
-            request.user.avatar.delete(save=True)
+        request.user.avatar.delete(save=True)
         return Response(status=status.HTTP_204_NO_CONTENT)
