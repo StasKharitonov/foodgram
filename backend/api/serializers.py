@@ -3,8 +3,8 @@ from djoser.serializers import UserSerializer as DjoserUserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
-from recipes.constants import (MAX_AUTHOR_RECIPES, MAX_COOKING_TIME,
-                               MIN_COOKING_TIME, MIN_INGREDIENT_AMOUNT)
+from recipes.constants import (MAX_COOKING_TIME, MIN_COOKING_TIME,
+                               MIN_INGREDIENT_AMOUNT)
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingCart, Tag)
 from users.models import Subscription, User
@@ -25,7 +25,6 @@ class UserSerializer(DjoserUserSerializer):
         return (
             request
             and request.user.is_authenticated
-            and obj != request.user
             and request.user.subscriptions.filter(author=obj).exists()
         )
 
@@ -200,7 +199,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         tags_data = validated_data.pop('tags', None)
         ingredients_data = validated_data.pop('ingredients', None)
-        instance = super().update(instance, validated_data)
+        super().update(instance, validated_data)
         if tags_data:
             instance.tags.set(tags_data)
         if ingredients_data:
@@ -298,9 +297,7 @@ class UserWithRecipesSerializer(UserSerializer):
                 try:
                     recipes_limit = int(limit_param)
                 except (TypeError, ValueError):
-                    recipes_limit = MAX_AUTHOR_RECIPES
-        if recipes_limit is None:
-            recipes_limit = MAX_AUTHOR_RECIPES
+                    recipes_limit = None
         recipes = obj.recipes.all()[:recipes_limit]
         return ShortRecipeSerializer(
             recipes,

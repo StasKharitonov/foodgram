@@ -1,3 +1,4 @@
+from django import forms
 from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.db.models import Count
@@ -125,7 +126,7 @@ class RecipeAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(
-            favorites_count=Count('favorited_by'),
+            favorites_count=Count('favorite'),
         )
 
 
@@ -137,8 +138,42 @@ class RecipeIngredientAdmin(admin.ModelAdmin):
     autocomplete_fields = ('ingredient', 'recipe')
 
 
+class UserRecipeAdminForm(forms.ModelForm):
+    duplicate_error_message = 'Такая запись уже существует.'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        user = cleaned_data.get('user')
+        recipe = cleaned_data.get('recipe')
+        if not user or not recipe:
+            return cleaned_data
+
+        duplicates = self._meta.model.objects.filter(
+            user=user,
+            recipe=recipe,
+        )
+        if self.instance.pk:
+            duplicates = duplicates.exclude(pk=self.instance.pk)
+        if duplicates.exists():
+            raise ValidationError(self.duplicate_error_message)
+        return cleaned_data
+
+
+class FavoriteAdminForm(UserRecipeAdminForm):
+    class Meta:
+        model = Favorite
+        fields = '__all__'
+
+
+class ShoppingCartAdminForm(UserRecipeAdminForm):
+    class Meta:
+        model = ShoppingCart
+        fields = '__all__'
+
+
 @admin.register(Favorite)
 class FavoriteAdmin(admin.ModelAdmin):
+    form = FavoriteAdminForm
     list_display = ('id', 'user', 'recipe')
     search_fields = ('user__email', 'user__username', 'recipe__name')
     list_filter = ('user', 'recipe')
@@ -147,6 +182,7 @@ class FavoriteAdmin(admin.ModelAdmin):
 
 @admin.register(ShoppingCart)
 class ShoppingCartAdmin(admin.ModelAdmin):
+    form = ShoppingCartAdminForm
     list_display = ('id', 'user', 'recipe')
     search_fields = ('user__email', 'user__username', 'recipe__name')
     list_filter = ('user', 'recipe')

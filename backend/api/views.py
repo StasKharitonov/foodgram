@@ -27,7 +27,6 @@ from users.models import Subscription, User
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.all()
     permission_classes = (IsAuthenticatedOrReadOnly, AuthorOrReadOnly)
     pagination_class = PageNumberPagination
     filter_backends = (DjangoFilterBackend,)
@@ -119,7 +118,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def download_shopping_cart(self, request):
         ingredients = RecipeIngredient.objects.filter(
-            recipe__in_shopping_cart__user=request.user
+            recipe__shoppingcart__user=request.user
         ).values(
             name=F('ingredient__name'),
             unit=F('ingredient__measurement_unit'),
@@ -205,7 +204,7 @@ class UserViewSet(DjoserUserViewSet):
     )
     def subscriptions(self, request):
         authors = User.objects.filter(
-            subscribers__user=request.user
+            author_subscriptions__user=request.user
         ).annotate(
             recipes_count=Count('recipes')
         ).order_by('username')
