@@ -25,7 +25,7 @@ class UserSerializer(DjoserUserSerializer):
         return (
             request
             and request.user.is_authenticated
-            and request.user.subscriptions.filter(author=obj).exists()
+            and request.user.user_subscriptions.filter(author=obj).exists()
         )
 
     def get_avatar(self, obj):
@@ -199,10 +199,12 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         tags_data = validated_data.pop('tags', None)
         ingredients_data = validated_data.pop('ingredients', None)
-        super().update(instance, validated_data)
-        if tags_data:
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        if tags_data is not None:
             instance.tags.set(tags_data)
-        if ingredients_data:
+        if ingredients_data is not None:
             RecipeIngredient.objects.filter(recipe=instance).delete()
             self._create_ingredients(instance, ingredients_data)
         return instance

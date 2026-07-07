@@ -189,12 +189,14 @@ class UserRecipe(models.Model):
 
 
 class Favorite(UserRecipe):
-    class Meta:
+    class Meta(UserRecipe.Meta):
+        abstract = False
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранные'
 
 
 class ShoppingCart(UserRecipe):
-    class Meta:
+    class Meta(UserRecipe.Meta):
+        abstract = False
         verbose_name = 'Корзина'
         verbose_name_plural = 'Корзины'

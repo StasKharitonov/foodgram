@@ -204,7 +204,7 @@ class UserViewSet(DjoserUserViewSet):
     )
     def subscriptions(self, request):
         authors = User.objects.filter(
-            author_subscriptions__user=request.user
+            subscriptions_to_author__user=request.user
         ).annotate(
             recipes_count=Count('recipes')
         ).order_by('username')
